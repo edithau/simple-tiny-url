@@ -1,34 +1,57 @@
 package acme;
 
-import junit.framework.TestCase;
+import acme.store.DBStore;
+import org.apache.log4j.Logger;
+import org.junit.Before;
+import org.junit.Test;
 
-public class SimpleTinyURLTest extends TestCase {
-    static String longURL = "www.google.com";
+import static org.mockito.Mockito.*;
+import static org.junit.Assert.*;
 
-    public SimpleTinyURLTest(String name) {
-        super( name );
+public class SimpleTinyURLTest {
+    private static String invalidShortURL = "nosuch";
+    private static String longURL = "www.google.com";
+    private static DBStore dbStore;
+    private static SimpleTinyURL testInstance;
+    private static final Logger log = Logger.getLogger(SimpleTinyURL.class);
+
+
+    @Before
+    public void setup() throws Exception {
+        String shortURL = SimpleTinyURL.md5Hash(longURL);
+        dbStore = mock(DBStore.class);
+        when(dbStore.get(shortURL)).thenReturn(longURL);
+        when(dbStore.put(shortURL, longURL)).thenReturn(longURL);
+        when(dbStore.get(invalidShortURL)).thenReturn(null);
+
+        testInstance = new SimpleTinyURL(dbStore);
+    }
+
+    // should return null on decoding an non-existing shorten URL
+    @Test
+    public void testInvalidShortURL() {
+        String expectedLongURL = testInstance.decode(invalidShortURL);
+        assertNull(expectedLongURL);
     }
 
     // url with or without trailing slash should produce the same key
+    @Test
     public void testEncodeWithTrailingSlash()  {
-        String encodedNoTrailingSlash = SimpleTinyURL.encode(longURL);
+        String encodedNoTrailingSlash = testInstance.encode(longURL);
         String longURLWithSlash = longURL + "/";
-        String encodedWithTrailingSlash = SimpleTinyURL.encode(longURLWithSlash);
+        String encodedWithTrailingSlash = testInstance.encode(longURLWithSlash);
 
         assertEquals("Error: url with or without trailing slash should produce the same encoding key",
                 encodedNoTrailingSlash, encodedWithTrailingSlash );
     }
 
     // should be able to decode a previously encoded long URL
-    // should not be able to decode a non existing shorten URL
+    @Test
     public void testDecode() {
-        String expectedLongURL = SimpleTinyURL.decode("nosuch");
-        assertNull(expectedLongURL);
-
-        String shortURL = SimpleTinyURL.encode(longURL);
-        expectedLongURL = SimpleTinyURL.decode(shortURL);
-        assertEquals("Error: decoded URL is not the same as the encoded URL", expectedLongURL, longURL);
-
+        String shortURL = testInstance.encode(longURL);
+        log.info("Test: after SimpleTinyURL encode");
+        String returnedLongURL = testInstance.decode(shortURL);
+        assertEquals("Error: decoded URL is not the same as the encoded URL", longURL, returnedLongURL);
     }
 
 }
