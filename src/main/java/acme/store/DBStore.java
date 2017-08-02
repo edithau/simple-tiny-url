@@ -27,7 +27,7 @@ public class DBStore {
         }
     }
 
-    public String get(String key) throws IOException {
+    public String get(String key) throws StoreException {
         Connection conn = null;
         PreparedStatement pStmtGet = null;
         ResultSet rSet = null;
@@ -38,14 +38,14 @@ public class DBStore {
             rSet = pStmtGet.executeQuery();
             return rSet.getString("longURL");
         } catch (SQLException e) {
-            throw new IOException("Cannot connect or query the database store", e);
+            throw new StoreException("Cannot connect or query the database store", e);
         } finally {
             closeSilent(rSet, pStmtGet, conn);
         }
     }
 
 
-    public String put(String key, String value) throws IOException {
+    public String put(String key, String value) throws StoreException {
         Connection conn = null;
         PreparedStatement pStmtPut = null;
         try {
@@ -63,7 +63,7 @@ public class DBStore {
             }
             return value;
         } catch (SQLException e) {
-            throw new IOException(e);
+            throw new StoreException(e);
         } finally {
             closeSilent(null, pStmtPut, conn);
         }
@@ -83,6 +83,7 @@ public class DBStore {
     }
 
     private void init() throws IOException {
+        log.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
         config = DataSourceFactory.getProperties();
         try {
             dataSource = DataSourceFactory.createDataSource(config);

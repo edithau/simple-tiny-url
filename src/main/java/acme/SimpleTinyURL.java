@@ -3,6 +3,7 @@ package acme;
 
 import acme.store.DBStore;
 import acme.store.InMemoryStore;
+import acme.store.StoreException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.log4j.Logger;
 
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.util.Base64;
 
 public class SimpleTinyURL {
+    private static final int MAX_COLLISION = 5;
     private static SimpleTinyURL instance;
     private static final Logger log = Logger.getLogger(SimpleTinyURL.class);
     private static final int KEY_SPACE = 6;
@@ -18,16 +20,18 @@ public class SimpleTinyURL {
     private DBStore dbStore;
 
     private SimpleTinyURL() {
-        inMemStore = new InMemoryStore<String, String>(CACHE_CAPACITY);
-        try {
-            dbStore = new DBStore();
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot connect to the database store", e);
-        }
     }
 
-    protected SimpleTinyURL(DBStore dbStore) {
-        this.inMemStore = new InMemoryStore<String, String>(CACHE_CAPACITY);;
+    protected SimpleTinyURL(InMemoryStore<String, String> inMemStore, DBStore dbStore) {
+        this.inMemStore = inMemStore;
+        this.dbStore = dbStore;
+    }
+
+    protected void setInMemStore(InMemoryStore<String, String> inMemStore) {
+        this.inMemStore = inMemStore;
+    }
+
+    protected void setDbStore(DBStore dbStore) {
         this.dbStore = dbStore;
         instance = this;
     }
@@ -35,6 +39,12 @@ public class SimpleTinyURL {
     public static SimpleTinyURL getInstance() {
         if (instance == null) {
             instance = new SimpleTinyURL();
+            instance.setInMemStore(new InMemoryStore<String, String>(CACHE_CAPACITY));
+            try {
+                instance.setDbStore(new DBStore());
+            } catch (IOException e) {
+                throw new RuntimeException("Cannot connect to the database store", e);
+            }
         }
         return instance;
     }
@@ -55,29 +65,40 @@ public class SimpleTinyURL {
     }
 
 
+
     public String encode(String longURL) {
         try {
+            int collisionCounter = 0;
             String normalizedLongURL = longURL;
+            String shortURL;
 
             // remove trailing slash
             if (longURL.endsWith("/")) {
                 normalizedLongURL = longURL.substring(0, longURL.length() - 1);
             }
-            String shortURL = md5Hash(normalizedLongURL);
 
-            // must put dbStore first before inMemStore
-            // to take advantage of the db unique key constraint and therefore no need to synchronize the 2 stores on put()
-            String dbStoreLongURL = dbStore.put(shortURL, normalizedLongURL);
-            String inMemStoreLongURL = inMemStore.put(shortURL, normalizedLongURL);
-            if (!dbStoreLongURL.equals(inMemStoreLongURL)) {
-                // this could happen if there are staled key value pairs in the db or if there is a key collision.
-                // TODO: retire the collided key forever
-                log.error("Key collision: key=" + shortURL + "  DB store URL= " + dbStoreLongURL + "   In memory store URL= " + inMemStoreLongURL);
-                return null;
+            do {
+                shortURL = md5Hash(normalizedLongURL);
+
+                // must put dbStore first before inMemStore
+                // to take advantage of the db unique key constraint and therefore no need to synchronize the 2 stores on put()
+                String dbStoreLongURL = dbStore.put(shortURL, normalizedLongURL);
+                if (!dbStoreLongURL.equals(normalizedLongURL)) {
+                    collisionCounter++;
+                    normalizedLongURL = collisionCounter + ":" + normalizedLongURL;
+                    log.warn("SimpleTinyURL.encode() Key collision: key=" + shortURL + "  DB store URL= " + dbStoreLongURL + "   normalizedLongURL= " + normalizedLongURL);
+                } else {
+                    inMemStore.put(shortURL, normalizedLongURL);
+                    break;
+                }
+            } while (collisionCounter > 0 && collisionCounter < MAX_COLLISION);
+
+            if (collisionCounter == MAX_COLLISION) {
+                throw new StoreException("Too many collisions for url =>" + longURL);
             }
 
             return shortURL;
-        } catch (Exception e) {
+        } catch (StoreException e) {
             log.error("Cannot encode url " + longURL, e);
             return null;
         }
