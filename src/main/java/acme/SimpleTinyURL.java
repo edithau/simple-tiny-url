@@ -58,8 +58,10 @@ public class SimpleTinyURL {
                 if (longURL != null)
                     inMemStore.put(shortURL, longURL);
             }
+            log.info("decoded {" + shortURL + ", " + longURL + "}");
             return longURL;
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -96,10 +98,10 @@ public class SimpleTinyURL {
             if (collisionCounter == MAX_COLLISION) {
                 throw new StoreException("Too many collisions for url =>" + longURL);
             }
-
+            log.info("encoded {" + shortURL + ", " + longURL + "}");
             return shortURL;
-        } catch (StoreException e) {
-            log.error("Cannot encode url " + longURL, e);
+        } catch (Exception e) {
+            log.error("Cannot encode url " + longURL + ". " + e.getMessage(), e);
             return null;
         }
     }

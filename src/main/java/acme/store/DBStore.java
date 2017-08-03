@@ -36,6 +36,7 @@ public class DBStore {
             pStmtGet = conn.prepareStatement("SELECT longURL FROM " + table + " WHERE shortURL = ?");
             pStmtGet.setString(1, key);
             rSet = pStmtGet.executeQuery();
+            rSet.next();
             return rSet.getString("longURL");
         } catch (SQLException e) {
             throw new StoreException("Cannot connect or query the database store", e);
@@ -83,7 +84,6 @@ public class DBStore {
     }
 
     private void init() throws IOException {
-        log.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
         config = DataSourceFactory.getProperties();
         try {
             dataSource = DataSourceFactory.createDataSource(config);
@@ -94,10 +94,11 @@ public class DBStore {
         Connection conn = null;
         Statement stmt;
         PreparedStatement pStmtCreate = null;
+        ResultSet rs = null;
         try {
             conn = dataSource.getConnection();
             stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '" + table + "'");
+            rs = stmt.executeQuery("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '" + table + "'");
             if (!rs.next()) {
                 // table does not exist so let's create one
                 pStmtCreate = conn.prepareStatement(TABLE_CREATE);
@@ -106,7 +107,7 @@ public class DBStore {
         } catch (Exception e) {
             throw new IOException(e);
         } finally {
-            closeSilent(null, pStmtCreate, conn);
+            closeSilent(rs, pStmtCreate, conn);
         }
     }
 

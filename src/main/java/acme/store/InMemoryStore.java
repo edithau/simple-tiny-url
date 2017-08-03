@@ -5,6 +5,8 @@ import org.apache.log4j.Logger;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+
+// TODO: cache_capacity test
 public class InMemoryStore<K, V> extends LinkedHashMap<K, V> {
     private int cache_capacity;
     private static final Logger log = Logger.getLogger(InMemoryStore.class);

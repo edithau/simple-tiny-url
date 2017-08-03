@@ -17,6 +17,8 @@ public class DataSourceFactory {
 
     /**
      * <a href="https://tomcat.apache.org/tomcat-7.0-doc/jdbc-pool.html#How_to_use">tomcat dbcp</a>
+     *
+     * TODO: move properties to a config file
      */
     public static Properties getProperties() {
         final Properties prop = new Properties();
@@ -25,8 +27,9 @@ public class DataSourceFactory {
         prop.setProperty("username", "my_user");
         prop.setProperty("password", "secret");
 
-        prop.setProperty("maxActive", "1");
-        prop.setProperty("maxIdle", "1");
+        prop.setProperty("maxActive", "6");
+        prop.setProperty("maxIdle", "6");
+        prop.setProperty("maxWait", "6");
         prop.setProperty("initialSize", "1");
         prop.setProperty("poolPreparedStatements", "true");
         prop.setProperty("maxOpenPreparedStatements", "10");
@@ -36,7 +39,6 @@ public class DataSourceFactory {
         prop.setProperty("removeAbandonedTimeout", "300");
         prop.setProperty("logAbandoned", "true");
         prop.setProperty("closeMethod", "close");
-        prop.setProperty("maxWait", "-1");
         return prop;
     }
 
