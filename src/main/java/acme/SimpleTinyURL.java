@@ -8,16 +8,18 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Base64;
 
 public class SimpleTinyURL {
     private static final int MAX_COLLISION = 5;
     private static SimpleTinyURL instance;
     private static final Logger log = Logger.getLogger(SimpleTinyURL.class);
-    private static final int KEY_SPACE = 6;
-    private static final int CACHE_CAPACITY=10;
+    private static final int KEY_SPACE = 7;
+    private static final int CACHE_CAPACITY=1000;
     private InMemoryStore<String, String> inMemStore;
     private DBStore dbStore;
+    private static final Charset iso8859 = Charset.forName("ISO-8859-1");
 
     private SimpleTinyURL() {
     }
@@ -107,7 +109,7 @@ public class SimpleTinyURL {
     }
 
     public static String md5Hash(String longURL) {
-        byte[] b = DigestUtils.md5(longURL.getBytes());
+        byte[] b = DigestUtils.md5(longURL.getBytes(iso8859));
         return new String(Base64.getEncoder().encode(b)).substring(0, KEY_SPACE);
     }
 }
