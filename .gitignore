@@ -1,6 +1,7 @@
 # Binary/Package Files #
 bin
 target
+*~
 *.class
 *.jar
 *.war

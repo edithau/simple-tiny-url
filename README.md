@@ -1,6 +1,6 @@
 # SimpleTinyURL
 
-SimpleTinyURL is a SIMPLE url shortener JSON service (on Tomcat).  I created it to understand how to implement a url shortener and to regain my Java knowledge.  To create (encode) an url, try like this:
+SimpleTinyURL is a SIMPLE url shortener JSON service.  I created it to understand how to implement a url shortener and to refresh my Java memory.  To create (encode) an url, try this:
 
 `curl -X POST 'http://localhost:8080/simple?url=www.google.com' `
 
@@ -34,4 +34,5 @@ You will need:
 License
 ----
 MIT
+
 **Free Software, Hell Yeah!**
